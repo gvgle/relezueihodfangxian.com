@@ -1,2 +1,722 @@
-# -
-打僵尸
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>僵尸大战：人类最后的防线</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72, #2a5298, #1a1a2e);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            color: white;
+        }
+        
+        .game-container {
+            width: 800px;
+            height: 600px;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            border: 2px solid #00ff41;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.3);
+        }
+        
+        .game-header {
+            height: 80px;
+            background: linear-gradient(90deg, #0a0a0a, #1a1a1a);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            border-bottom: 2px solid #00ff41;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff41;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .health-bar {
+            width: 200px;
+            height: 20px;
+            background: rgba(255, 0, 0, 0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid #fff;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ff4444);
+            width: 100%;
+            transition: width 0.3s;
+        }
+        
+        .game-area {
+            width: 100%;
+            height: 520px;
+            position: relative;
+            background: 
+                radial-gradient(circle at 20% 80%, rgba(120, 0, 0, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(0, 0, 120, 0.3) 0%, transparent 50%),
+                linear-gradient(180deg, #0f0f23 0%, #1a1a2e 50%, #0f0f23 100%);
+        }
+        
+        .human {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            border-radius: 20px;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+        
+        .human:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(76, 175, 80, 0.7);
+        }
+        
+        .zombie {
+            position: absolute;
+            width: 35px;
+            height: 35px;
+            background: linear-gradient(45deg, #8B4513, #A0522D);
+            border-radius: 17px;
+            border: 2px solid #654321;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            animation: zombieWalk 0.5s infinite alternate;
+            z-index: 5;
+        }
+        
+        @keyframes zombieWalk {
+            0% { transform: translateX(0px) rotate(-2deg); }
+            100% { transform: translateX(2px) rotate(2deg); }
+        }
+        
+        .fast-zombie {
+            background: linear-gradient(45deg, #ff4444, #ff6666);
+            animation-duration: 0.3s;
+        }
+        
+        .tank-zombie {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(45deg, #2c3e50, #34495e);
+            border: 3px solid #1a252f;
+        }
+        
+        .bullet {
+            position: absolute;
+            
+            width: 6px;
+            height: 6px;
+            background: #ffff00;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #ffff00;
+            z-index: 8;
+        }
+        
+        .explosion {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, #ff4444, #ff0000, transparent);
+            border-radius: 50%;
+            animation: explode 0.5s ease-out forwards;
+            z-index: 15;
+        }
+        
+        @keyframes explode {
+            0% { transform: scale(0.5); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+        
+        .wave-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff4444;
+            text-shadow: 0 0 10px #ff4444;
+            animation: waveAnnounce 2s ease-out;
+            z-index: 20;
+        }
+        
+        @keyframes waveAnnounce {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(2); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            border: 2px solid #ff4444;
+            display: none;
+            z-index: 100;
+        }
+        
+        .victory {
+            border-color: #00ff41;
+        }
+        
+        .restart-btn {
+            background: linear-gradient(45deg, #ff4444, #ff6666);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 18px;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(255, 68, 68, 0.4);
+        }
+        
+        .restart-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 68, 68, 0.6);
+        }
+        
+        .spawn-point {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 2px dashed #ff4444;
+            border-radius: 25px;
+            opacity: 0.5;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        
+        .upgrade-panel {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .upgrade-btn {
+            background: linear-gradient(45deg, #2196F3, #21CBF3);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s;
+        }
+        
+        .upgrade-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .upgrade-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-header">
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="score">0</div>
+                    <div class="stat-label">分数</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="wave">1</div>
+                    <div class="stat-label">波次</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="zombies">0</div>
+                    <div class="stat-label">剩余僵尸</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="money">100</div>
+                    <div class="stat-label">金币</div>
+                </div>
+            </div>
+            <div>
+                <div style="font-size: 14px; margin-bottom: 5px;">基地血量</div>
+                <div class="health-bar">
+                    <div class="health-fill" id="healthFill"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="game-area" id="gameArea">
+            <!-- 游戏对象会在这里动态生成 -->
+        </div>
+        
+        <div class="upgrade-panel">
+            <button class="upgrade-btn" onclick="buyHuman()" id="buyHumanBtn">
+                购买人类战士 (50金币)
+            </button>
+            <button class="upgrade-btn" onclick="upgradeFireRate()" id="upgradeFireBtn">
+                升级射速 (100金币)
+            </button>
+            <button class="upgrade-btn" onclick="upgradeDamage()" id="upgradeDmgBtn">
+                升级伤害 (150金币)
+            </button>
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <h2 id="gameOverTitle">游戏结束！</h2>
+            <p>最终分数: <span id="finalScore">0</span></p>
+            <p>存活波次: <span id="finalWave">1</span></p>
+            <button class="restart-btn" onclick="startGame()">重新开始</button>
+        </div>
+    </div>
+
+    <script>
+        let gameState = {
+            score: 0,
+            wave: 1,
+            money: 100,
+            baseHealth: 100,
+            maxHealth: 100,
+            isGameRunning: false,
+            humans: [],
+            zombies: [],
+            bullets: [],
+            humanFireRate: 1000,
+            humanDamage: 25,
+            zombiesPerWave: 5,
+            currentZombieCount: 0,
+            waveInProgress: false,
+            spawnPoints: [
+                {x: 0, y: 200}, {x: 0, y: 300}, {x: 0, y: 400},
+                {x: 750, y: 200}, {x: 750, y: 300}, {x: 750, y: 400}
+            ]
+        };
+        
+        const gameArea = document.getElementById('gameArea');
+        const elements = {
+            score: document.getElementById('score'),
+            wave: document.getElementById('wave'),
+            zombies: document.getElementById('zombies'),
+            money: document.getElementById('money'),
+            healthFill: document.getElementById('healthFill'),
+            gameOver: document.getElementById('gameOver'),
+            finalScore: document.getElementById('finalScore'),
+            finalWave: document.getElementById('finalWave'),
+            gameOverTitle: document.getElementById('gameOverTitle')
+        };
+        
+        let gameLoop;
+        let waveInterval;
+        
+        function startGame() {
+            gameState = {
+                ...gameState,
+                score: 0,
+                wave: 1,
+                money: 100,
+                baseHealth: 100,
+                isGameRunning: true,
+                humans: [],
+                zombies: [],
+                bullets: [],
+                currentZombieCount: 0,
+                waveInProgress: false
+            };
+            
+            gameArea.innerHTML = '';
+            elements.gameOver.style.display = 'none';
+            
+            // 创建出生点标记
+            gameState.spawnPoints.forEach(point => {
+                const spawnPoint = document.createElement('div');
+                spawnPoint.className = 'spawn-point';
+                spawnPoint.style.left = point.x + 'px';
+                spawnPoint.style.top = point.y + 'px';
+                gameArea.appendChild(spawnPoint);
+            });
+            
+            // 初始人类
+            createHuman(400, 300);
+            createHuman(350, 250);
+            
+            updateUI();
+            gameLoop = setInterval(updateGame, 16);
+            
+            setTimeout(() => startWave(), 2000);
+        }
+        
+        function createHuman(x, y) {
+            const human = document.createElement('div');
+            human.className = 'human';
+            human.textContent = '🚹';
+            human.style.left = x + 'px';
+            human.style.top = y + 'px';
+            
+            const humanData = {
+                element: human,
+                x: x,
+                y: y,
+                lastFire: 0,
+                target: null
+            };
+            
+            human.addEventListener('click', () => {
+                if (gameState.money >= 20) {
+                    gameState.money -= 20;
+                    humanData.lastFire = 0; // 立即开火
+                    updateUI();
+                }
+            });
+            
+            gameArea.appendChild(human);
+            gameState.humans.push(humanData);
+        }
+        
+        function startWave() {
+            if (!gameState.isGameRunning) return;
+            
+            gameState.waveInProgress = true;
+            gameState.currentZombieCount = gameState.zombiesPerWave + Math.floor(gameState.wave / 2);
+            
+            // 显示波次提示
+            const waveIndicator = document.createElement('div');
+            waveIndicator.className = 'wave-indicator';
+            waveIndicator.textContent = `第 ${gameState.wave} 波！`;
+            gameArea.appendChild(waveIndicator);
+            
+            setTimeout(() => {
+                if (waveIndicator.parentNode) {
+                    waveIndicator.parentNode.removeChild(waveIndicator);
+                }
+            }, 2000);
+            
+            // 生成僵尸
+            const spawnInterval = setInterval(() => {
+                if (gameState.currentZombieCount > 0 && gameState.isGameRunning) {
+                    spawnZombie();
+                    gameState.currentZombieCount--;
+                } else {
+                    clearInterval(spawnInterval);
+                }
+            }, 2000 - Math.min(gameState.wave * 100, 1500));
+            
+            updateUI();
+        }
+        
+        function spawnZombie() {
+            const spawnPoint = gameState.spawnPoints[Math.floor(Math.random() * gameState.spawnPoints.length)];
+            const zombie = document.createElement('div');
+            
+            // 随机僵尸类型
+            const rand = Math.random();
+            if (rand < 0.1 && gameState.wave > 3) {
+                // 坦克僵尸
+                zombie.className = 'zombie tank-zombie';
+                zombie.textContent = '🛡️';
+                zombie.dataset.health = '100';
+                zombie.dataset.speed = '0.5';
+                zombie.dataset.damage = '30';
+            } else if (rand < 0.3 && gameState.wave > 2) {
+                // 快速僵尸
+                zombie.className = 'zombie fast-zombie';
+                zombie.textContent = '🏃';
+                zombie.dataset.health = '30';
+                zombie.dataset.speed = '2';
+                zombie.dataset.damage = '15';
+            } else {
+                // 普通僵尸
+                zombie.className = 'zombie';
+                zombie.textContent = '🧟';
+                zombie.dataset.health = '50';
+                zombie.dataset.speed = '1';
+                zombie.dataset.damage = '20';
+            }
+            
+            zombie.style.left = spawnPoint.x + 'px';
+            zombie.style.top = spawnPoint.y + 'px';
+            
+            const zombieData = {
+                element: zombie,
+                x: spawnPoint.x,
+                y: spawnPoint.y,
+                health: parseInt(zombie.dataset.health),
+                maxHealth: parseInt(zombie.dataset.health),
+                speed: parseFloat(zombie.dataset.speed),
+                damage: parseInt(zombie.dataset.damage),
+                targetX: 400,
+                targetY: 300
+            };
+            
+            gameArea.appendChild(zombie);
+            gameState.zombies.push(zombieData);
+        }
+        
+        function updateGame() {
+            if (!gameState.isGameRunning) return;
+            
+            // 更新僵尸移动
+            gameState.zombies.forEach((zombie, index) => {
+                const dx = zombie.targetX - zombie.x;
+                const dy = zombie.targetY - zombie.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance > 5) {
+                    zombie.x += (dx / distance) * zombie.speed;
+                    zombie.y += (dy / distance) * zombie.speed;
+                    zombie.element.style.left = zombie.x + 'px';
+                    zombie.element.style.top = zombie.y + 'px';
+                } else {
+                    // 僵尸到达基地
+                    gameState.baseHealth -= zombie.damage;
+                    createExplosion(zombie.x, zombie.y);
+                    zombie.element.parentNode.removeChild(zombie.element);
+                    gameState.zombies.splice(index, 1);
+                    
+                    if (gameState.baseHealth <= 0) {
+                        endGame(false);
+                    }
+                }
+            });
+            
+            // 人类射击
+            const currentTime = Date.now();
+            gameState.humans.forEach(human => {
+                if (currentTime - human.lastFire > gameState.humanFireRate) {
+                    const nearestZombie = findNearestZombie(human.x, human.y);
+                    if (nearestZombie && getDistance(human, nearestZombie) < 200) {
+                        fireBullet(human, nearestZombie);
+                        human.lastFire = currentTime;
+                    }
+                }
+            });
+            
+            // 更新子弹
+            gameState.bullets.forEach((bullet, index) => {
+                bullet.x += bullet.vx;
+                bullet.y += bullet.vy;
+                bullet.element.style.left = bullet.x + 'px';
+                bullet.element.style.top = bullet.y + 'px';
+                
+                // 检查子弹撞击
+                const hitZombie = gameState.zombies.find(zombie => 
+                    getDistance(bullet, zombie) < 20
+                );
+                
+                if (hitZombie) {
+                    hitZombie.health -= gameState.humanDamage;
+                    createExplosion(bullet.x, bullet.y);
+                    
+                    if (hitZombie.health <= 0) {
+                        gameState.score += 100;
+                        gameState.money += 25;
+                        createExplosion(hitZombie.x, hitZombie.y);
+                        hitZombie.element.parentNode.removeChild(hitZombie.element);
+                        gameState.zombies.splice(gameState.zombies.indexOf(hitZombie), 1);
+                    }
+                    
+                    bullet.element.parentNode.removeChild(bullet.element);
+                    gameState.bullets.splice(index, 1);
+                } else if (bullet.x < 0 || bullet.x > 800 || bullet.y < 0 || bullet.y > 520) {
+                    bullet.element.parentNode.removeChild(bullet.element);
+                    gameState.bullets.splice(index, 1);
+                }
+            });
+            
+            // 检查波次完成
+            if (gameState.waveInProgress && gameState.zombies.length === 0 && gameState.currentZombieCount === 0) {
+                gameState.waveInProgress = false;
+                gameState.wave++;
+                gameState.money += 50;
+                
+                if (gameState.wave > 15) {
+                    endGame(true);
+                } else {
+                    setTimeout(() => startWave(), 3000);
+                }
+            }
+            
+            updateUI();
+        }
+        
+        function fireBullet(human, target) {
+            const bullet = document.createElement('div');
+            bullet.className = 'bullet';
+            bullet.style.left = human.x + 'px';
+            bullet.style.top = human.y + 'px';
+            
+            const dx = target.x - human.x;
+            const dy = target.y - human.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            const speed = 5;
+            
+            const bulletData = {
+                element: bullet,
+                x: human.x,
+                y: human.y,
+                vx: (dx / distance) * speed,
+                vy: (dy / distance) * speed
+            };
+            
+            gameArea.appendChild(bullet);
+            gameState.bullets.push(bulletData);
+        }
+        
+        function findNearestZombie(x, y) {
+            let nearest = null;
+            let minDistance = Infinity;
+            
+            gameState.zombies.forEach(zombie => {
+                const distance = getDistance({x, y}, zombie);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    nearest = zombie;
+                }
+            });
+            
+            return nearest;
+        }
+        
+        function getDistance(a, b) {
+            const dx = a.x - b.x;
+            const dy = a.y - b.y;
+            return Math.sqrt(dx * dx + dy * dy);
+        }
+        
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - 20) + 'px';
+            explosion.style.top = (y - 20) + 'px';
+            gameArea.appendChild(explosion);
+            
+            setTimeout(() => {
+                if (explosion.parentNode) {
+                    explosion.parentNode.removeChild(explosion);
+                }
+            }, 500);
+        }
+        
+        function buyHuman() {
+            if (gameState.money >= 50) {
+                gameState.money -= 50;
+                const x = 300 + Math.random() * 200;
+                const y = 200 + Math.random() * 200;
+                createHuman(x, y);
+                updateUI();
+            }
+        }
+        
+        function upgradeFireRate() {
+            if (gameState.money >= 100) {
+                gameState.money -= 100;
+                gameState.humanFireRate = Math.max(200, gameState.humanFireRate - 100);
+                updateUI();
+            }
+        }
+        
+        function upgradeDamage() {
+            if (gameState.money >= 150) {
+                gameState.money -= 150;
+                gameState.humanDamage += 15;
+                updateUI();
+            }
+        }
+        
+        function updateUI() {
+            elements.score.textContent = gameState.score;
+            elements.wave.textContent = gameState.wave;
+            elements.zombies.textContent = gameState.zombies.length + gameState.currentZombieCount;
+            elements.money.textContent = gameState.money;
+            elements.healthFill.style.width = (gameState.baseHealth / gameState.maxHealth * 100) + '%';
+            
+            // 更新按钮状态
+            document.getElementById('buyHumanBtn').disabled = gameState.money < 50;
+            document.getElementById('upgradeFireBtn').disabled = gameState.money < 100;
+            document.getElementById('upgradeDmgBtn').disabled = gameState.money < 150;
+        }
+        
+        function endGame(victory) {
+            gameState.isGameRunning = false;
+            clearInterval(gameLoop);
+            
+            elements.finalScore.textContent = gameState.score;
+            elements.finalWave.textContent = gameState.wave;
+            elements.gameOverTitle.textContent = victory ? '胜利！' : '基地被摧毁！';
+            elements.gameOver.className = victory ? 'game-over victory' : 'game-over';
+            elements.gameOver.style.display = 'block';
+        }
+        
+        // 点击游戏区域放置人类
+        gameArea.addEventListener('click', (e) => {
+            if (gameState.isGameRunning && gameState.money >= 50) {
+                const rect = gameArea.getBoundingClientRect();
+                const x = e.clientX - rect.left - 20;
+                const y = e.clientY - rect.top - 20;
+                
+                if (x > 100 && x < 700 && y > 100 && y < 400) {
+                    buyHuman();
+                    const newHuman = gameState.humans[gameState.humans.length - 1];
+                    newHuman.x = x;
+                    newHuman.y = y;
+                    newHuman.element.style.left = x + 'px';
+                    newHuman.element.style.top = y + 'px';
+                }
+            }
+        });
+        
+        // 开始游戏
+        startGame();
+    </script>
+</body>
+</html>
